@@ -54,7 +54,9 @@ void loop() {
   
   while (true) {
     while (Serial.available() == 0) { ;} //wait for character
-    long next = millis(); char b = (char)Serial.read();
+    char b = (char)Serial.read();
+    if (b == 0x1B) { checkF(); } //validate function key press
+    long next = millis();
 
     //delta
     long delta = next - start;
@@ -79,6 +81,22 @@ void loop() {
 // 1
 // F1 = 1, F2 = 2, ...
 // ~
+void checkF() {
+  while (Serial.available() == 0) { ;} //wait for character
+  char s = (char)Serial.read(); //should be [
+  if (s != '[') { return }
+  while (Serial.available() == 0) { ;} //wait for character
+  char one = (char)Serial.read(); //should be 1
+  if (one != '1') { return }
+  while (Serial.available() == 0) { ;} //wait for character
+  char F = (char)Serial.read(); //should be 1-9
+  if (F < '1' or F > '9') { return }
+  while (Serial.available() == 0) { ;} //wait for character
+  char end = (char)Serial.read(); //should be ~
+  if (one != '~') { return }
+  
+  //now start recording for F#
+}
 
 //if detect function key
 //  enter recording mode, should bells still play?
