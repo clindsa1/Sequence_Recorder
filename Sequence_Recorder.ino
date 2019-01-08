@@ -1,106 +1,101 @@
-//press and F# key
-//press key
-//  press another key
-//    if F# then stop
-//  count delta time
-//  write both to file
-//loop
+//creates recording files from F1 to F8
 
 #include <SPI.h>
 #include <SD.h>
 
 const int chipSelect = 4;
 
+char f_name_which; bool recording; long start;
 File dataFile;
 
 void setup() {
-  // put your setup code here, to run once:
-
-  Serial.begin(115200); //this speed does not matter
   //50ms between characters = 200cps -> the kps from the host
-
+  Serial.begin(115200); //so we need more than 9600
   
   Serial.println("Initializing SD card...");
 
-  // see if the card is present and can be initialized:
-  if (!SD.begin(chipSelect)) {
+  if (!SD.begin(chipSelect)) { // see if the card is present and can be initialized:
     Serial.println("Card failed, or not present");
     // don't do anything more:
     return;
   }
   Serial.println("card initialized.");
-
-  dataFile = SD.open("datalog.txt", FILE_WRITE);
-
-  // if the file is available, write to it:
-  if (dataFile) {
-    Serial.println("Start typing");
-  }
-  // if the file isn't open, pop up an error:
-  else {
-    Serial.println("error opening datalog.txt");
-    while (true) { ;}
-  }
-
-  dataFile.close();
+  f_name_which = 0; recording = false;
 }
 
 void loop() {
-  //first character
   while (Serial.available() == 0) { ;} //wait for character
-  long start = millis(); char a = (char)Serial.read();
+  long next = millis(); char b = (char)Serial.read();
 
-  //NEED TO RECORD FIRST CHAR -> 'char',0
-  
-  while (true) {
+  if (b == 0x1B) {
+    FCheck();
     while (Serial.available() == 0) { ;} //wait for character
-    char b = (char)Serial.read();
-    if (b == 0x1B) { checkF(); } //validate function key press
-    long next = millis();
+    long next = millis(); b = (char)Serial.read(); //get next character after F#
+  }
 
-    //delta
+  if (recording) {
     long delta = next - start;
     Serial.print("delay: "); Serial.println(delta);
     start = next;
 
     //create log file line
-    String num = String(delta, DEC);
-    String c = String(b);
+    String num = String(delta, DEC); String c = String(b);
     String val = "'" + c + "'," + num;
 
-    dataFile = SD.open("datalog.txt", FILE_WRITE);
-    dataFile.println(val);
-    Serial.println(val);
+    F_Opener(); //open correct file
+  
+    dataFile.println(val); Serial.println(val); //save
+    
     dataFile.close(); //have to close the file to ensure commit data
   }
 }
 
-//function key format
-// 0x1B
-// [
-// 1
-// F1 = 1, F2 = 2, ...
-// ~
-void checkF() {
-  while (Serial.available() == 0) { ;} //wait for character
-  char s = (char)Serial.read(); //should be [
-  if (s != '[') { return }
-  while (Serial.available() == 0) { ;} //wait for character
-  char one = (char)Serial.read(); //should be 1
-  if (one != '1') { return }
-  while (Serial.available() == 0) { ;} //wait for character
-  char F = (char)Serial.read(); //should be 1-9
-  if (F < '1' or F > '9') { return }
-  while (Serial.available() == 0) { ;} //wait for character
-  char end = (char)Serial.read(); //should be ~
-  if (one != '~') { return }
-  
-  //now start recording for F#
+void F_Opener () {
+  switch (f_name_which) { //open correct file
+    case '1':
+      dataFile = SD.open("one.txt", FILE_WRITE); break;
+    case '2':
+      dataFile = SD.open("two.txt", FILE_WRITE); break;
+    case '3':
+      dataFile = SD.open("three.txt", FILE_WRITE); break;
+    case '4':
+      dataFile = SD.open("four.txt", FILE_WRITE); break;
+    case '5':
+      dataFile = SD.open("five.txt", FILE_WRITE); break;
+    case '6':
+      dataFile = SD.open("six.txt", FILE_WRITE); break;
+    case '7':
+      dataFile = SD.open("seven.txt", FILE_WRITE); break;
+    case '8':
+      dataFile = SD.open("eight.txt", FILE_WRITE); break;
+  }
+
+  if (!dataFile) { //something has gone very wrong
+    Serial.println("error opening datalog.txt");
+    while (true) { ;} //infinte loop
+  }
 }
 
-//if detect function key
-//  enter recording mode, should bells still play?
-//loop
-//if detect function key
-//  stop recording
+void FCheck () { //function key format 0x1B, [, 1, F1 = 1 F2 = 2..., ~
+  //the 0x1B was parsed by calling function
+  while (Serial.available() == 0) { ;} //wait for character
+  char s = (char)Serial.read(); //[
+  while (Serial.available() == 0) { ;} //wait for character
+  char o = (char)Serial.read(); //1
+  while (Serial.available() == 0) { ;} //wait for character
+  char f = (char)Serial.read(); //F#
+  while (Serial.available() == 0) { ;} //wait for character
+  char e = (char)Serial.read(); //~
 
+  //currently no error checking
+
+  //start recorder
+  f_name_which = f;
+  recording = not(recording);
+  if (recording) { //prompt
+    Serial.print(f); Serial.println(" START");
+    start = millis();
+  } else {
+    Serial.print(f); Serial.println(" STOP");
+  }
+}
