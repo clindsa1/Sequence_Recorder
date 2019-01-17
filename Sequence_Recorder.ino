@@ -28,19 +28,20 @@ void loop() {
   long next = millis(); char b = (char)Serial.read();
 
   if (b == 0x1B) { //function key
-    FCheck();
+    FNumCheck();
     while (Serial.available() == 0) { ;} //wait for character
-    long next = millis(); b = (char)Serial.read(); //get next character after F#
+    next = millis(); b = (char)Serial.read(); //get next character after F#
   }
 
   if (b == '*') { //player mode
     Serial.println("Player Mode");
     while (Serial.available() == 0) { ;} //wait for character
     b = (char)Serial.read(); //get next character after F#
-    F_Player(b);
+    FNum_Player(b);
   }
 
   if (recording) {
+    next = millis();
     long delta = next - start;
     Serial.print("delay: "); Serial.println(delta);
     start = next;
@@ -49,7 +50,7 @@ void loop() {
     String num = String(delta, DEC); String c = String(b);
     String val = "'" + c + "'," + num;
 
-    F_Write_Opener(); //open correct file
+    FNum_Write_Opener(); //open correct file
   
     dataFile.println(val); Serial.println(val); //save, puts the /r/n into text
     
@@ -57,7 +58,7 @@ void loop() {
   }
 }
 
-void F_Write_Opener () {
+void FNum_Write_Opener () {
   switch (f_name_which) { //open correct file
     case '1':
       dataFile = SD.open("ONE.TXT", FILE_WRITE); break; //files always seem to b ucase
@@ -85,7 +86,7 @@ void F_Write_Opener () {
   }
 }
 
-void FCheck () { //function key format 0x1B, [, 1, F1 = 1 F2 = 2..., ~
+void FNumCheck () { //function key format 0x1B, [, 1, F1 = 1 F2 = 2..., ~
   //the 0x1B was parsed by calling function
   while (Serial.available() == 0) { ;} //wait for character
   char s = (char)Serial.read(); //[
@@ -109,7 +110,7 @@ void FCheck () { //function key format 0x1B, [, 1, F1 = 1 F2 = 2..., ~
   }
 }
 
-void F_Player (char f_name) {
+void FNum_Player (char f_name) {
   switch (f_name) { //open correct file
     case '1':
       dataFile = SD.open("ONE.TXT", FILE_READ); break;
