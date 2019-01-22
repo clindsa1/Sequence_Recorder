@@ -26,12 +26,42 @@ void setup() {
   mode = 0;
 }
 
+void loop () {
+  while (Serial.available() == 0) { ;} //wait for character
+  long next = millis(); char input = (char)Serial.read();
+  switch (mode) {
+    case 0: //stopped
+      //waiting for a mode character
+      break;
+    case 1: //keyboard
+      //keys play notes
+      //stop goes back to mode 0
+      break;
+    case 2: //playing
+      //goes back to mode 0 when done
+      break;
+    case 3: //recording
+      if (recording) {
+        //keys play and save
+      } else {
+        //user needs to press an F# key
+      }
+      //stop goes back to mode 0
+      break;
+    default: //FAIL
+      Serial.println("Mode Error!");
+      while (true) { ;} //infinite loop
+      break;
+  }
+}
+
+/*
 void loop() {
   while (Serial.available() == 0) { ;} //wait for character
   long next = millis(); char input = (char)Serial.read();
 
   if (input == 0x1B) { //function key
-    FNum_Press_Check();
+    char f = FNum_Press_Check();
     while (Serial.available() == 0) { ;} //wait for character
     long next = millis(); input = (char)Serial.read(); //get next character after F#
   }
@@ -43,11 +73,11 @@ void loop() {
     FNum_Player(input);
   }
 
-  /* '1' is stop */
+  // '1' is stop
 
-  /* '0' is start */
+  // '0' is start
 
-  if (recording) {
+  if (mode == 3) {
     long delta = next - start;
     Serial.print("delay: "); Serial.println(delta);
     start = next;
@@ -65,9 +95,10 @@ void loop() {
     //start = next; //may want to time the file open-write-close block
   }
 }
+*/
 
 void FNum_File_Opener (bool RW, char file) {
-  int fmode = (RW ? FILE_READ : FILE_WRITE);
+  int fmode = (RW ? FILE_READ : FILE_WRITE); //other option is to pass RW as int constants in call
   switch (file) { //open correct file
     case '1':
       dataFile = SD.open("ONE.TXT", fmode); break; //files always seem to b ucase
@@ -95,7 +126,7 @@ void FNum_File_Opener (bool RW, char file) {
   }
 }
 
-void FNum_Press_Check () { //function key format 0x1B, [, 1, F1 = 1 F2 = 2..., ~
+char FNum_Press_Check () { //function key format 0x1B, [, 1, F1 = 1 F2 = 2..., ~
   //the 0x1B was parsed by calling function
   while (Serial.available() == 0) { ;} //wait for character
   char s = (char)Serial.read(); //[
@@ -108,47 +139,36 @@ void FNum_Press_Check () { //function key format 0x1B, [, 1, F1 = 1 F2 = 2..., ~
 
   //currently no error checking
 
-  //start recorder
-  f_name_which = f;
-  recording = not(recording);
-  if (recording) { //prompt
-    Serial.print(f); Serial.println(" START");
-    start = millis();
-  } else {
-    Serial.print(f); Serial.println(" STOP");
-  }
+  return (f);
 }
 
-void FNum_Player (char f_name) {
+void FNum_Player (char f_name) { //plays the contents of a single file
   FNum_File_Opener(true, f_name);
-
   Serial.println("Playing File");
   
   while (dataFile.available()) { //loop through file
-    String line = "";
-    char in = 0x00; //NULL
-    while (in != '\n') { //get 1 line
-      in = dataFile.read();
-      line = line + String(in);
-    }
+    String line = ""; char in = 0x00; //NULL
+    while (in != '\n') { line = line + String(dataFile.read()); } //get 1 line
 
     //it just seemed to be easier to create a line string then parse it
-    int len = line.length();
-    char note = line.charAt(1);
-    String duration = line.substring(4);
-    int dur = duration.toInt();
+    int len = line.length(); char note = line.charAt(1);
+    String duration = line.substring(4); int dur = duration.toInt();
 
     /* call player funciton here */
     Serial.print("line: "); Serial.println(line); //test found line of text
     Serial.print("note: "); Serial.println(note); 
-    Serial.print("duration: ");  Serial.println(dur);
+    Serial.print("duration: "); Serial.println(dur);
     
     long start = millis();
-    if (dur <= 0) { break; }
-    while (millis() - start < dur) { ;}
+    if (dur <= 0) { break; } //no duration is kill condition
+    while (millis() - start < dur) { ;} //wait till duration
   }
 
   dataFile.close();
   Serial.println("Done Playing");
+
+  while (Serial.available() > 0) { //remove anything sent to Arduino during playback
+    char s = (char)Serial.read();
+  }
 }
 
