@@ -32,21 +32,60 @@ void loop () {
   switch (mode) {
     case 0: //stopped
       //waiting for a mode character
+      switch (input) {
+        case '1':
+          mode = 1; break;
+        case '2':
+          mode = 2; break;
+        case '3':
+          mose = 3; break;
+        //default: does nothing
+      }
       break;
     case 1: //keyboard
       //keys play notes
-      //stop goes back to mode 0
+      if (input == '0') { //stop goes back to mode 0
+        mode = 0;
+      } else {
+        //!!!!call note player!!!!
+      }
       break;
     case 2: //playing
-      //goes back to mode 0 when done
+      //next character is which file to play
+      while (Serial.available() == 0) { ;} //wait for character
+      f_name_which = (char)Serial.read();
+      FNum_Player (f_name_which); //test
+      mode = 0;//goes back to mode 0 when done
       break;
     case 3: //recording
       if (recording) {
         //keys play and save
-      } else {
+        if (input == '0') { //stop goes back to mode 0
+          recoding = false; mode = 0; f_name_which = 0;
+        } else {
+          //!!!!call note player!!!!
+
+          long delta = next - start;
+          Serial.print("delay: "); Serial.println(delta);
+          start = next;
+
+          //create log file line
+          String num = String(delta, DEC); String c = String(input);
+          String val = "'" + c + "'," + num; //the quotes make the file CSV, but are not needed for us
+
+          //save
+          FNum_Player (f_name_which);
+          dataFile.println(val); Serial.println(val); //save, puts the \r\n into text
+          dataFile.close(); //have to close the file to ensure commit data
+
+          start = next; //may want to time the file open-write-close block
+        }
+      } else if (input == 0x1B) {
         //user needs to press an F# key
-      }
-      //stop goes back to mode 0
+        char f = FNum_Press_Check ();
+        FNum_File_Opener (false, char f);
+        recording = true;
+      }      
       break;
     default: //FAIL
       Serial.println("Mode Error!");
@@ -54,48 +93,6 @@ void loop () {
       break;
   }
 }
-
-/*
-void loop() {
-  while (Serial.available() == 0) { ;} //wait for character
-  long next = millis(); char input = (char)Serial.read();
-
-  if (input == 0x1B) { //function key
-    char f = FNum_Press_Check();
-    while (Serial.available() == 0) { ;} //wait for character
-    long next = millis(); input = (char)Serial.read(); //get next character after F#
-  }
-
-  if (input == '*') { //player mode
-    Serial.println("Player Mode");
-    while (Serial.available() == 0) { ;} //wait for character
-    input = (char)Serial.read(); //get next character, file to play
-    FNum_Player(input);
-  }
-
-  // '1' is stop
-
-  // '0' is start
-
-  if (mode == 3) {
-    long delta = next - start;
-    Serial.print("delay: "); Serial.println(delta);
-    start = next;
-
-    //create log file line
-    String num = String(delta, DEC); String c = String(input);
-    String val = "'" + c + "'," + num; //the quotes make the file CSV, but are not needed for us
-
-    FNum_File_Opener(false, f_name_which); //open correct file
-  
-    dataFile.println(val); Serial.println(val); //save, puts the \r\n into text
-    
-    dataFile.close(); //have to close the file to ensure commit data
-
-    //start = next; //may want to time the file open-write-close block
-  }
-}
-*/
 
 void FNum_File_Opener (bool RW, char file) {
   int fmode = (RW ? FILE_READ : FILE_WRITE); //other option is to pass RW as int constants in call
@@ -154,7 +151,7 @@ void FNum_Player (char f_name) { //plays the contents of a single file
     int len = line.length(); char note = line.charAt(1);
     String duration = line.substring(4); int dur = duration.toInt();
 
-    /* call player funciton here */
+    //!!!! call player funciton here !!!!
     Serial.print("line: "); Serial.println(line); //test found line of text
     Serial.print("note: "); Serial.println(note); 
     Serial.print("duration: "); Serial.println(dur);
