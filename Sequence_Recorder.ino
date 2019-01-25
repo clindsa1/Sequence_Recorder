@@ -29,16 +29,20 @@ void setup() {
 void loop () {
   while (Serial.available() == 0) { ;} //wait for character
   long next = millis(); char input = (char)Serial.read();
+  Serial.println(input);
   switch (mode) {
     case 0: //stopped
       //waiting for a mode character
       switch (input) {
         case '1':
+          Serial.println("Keyboard");
           mode = 1; break;
         case '2':
+          Serial.println("Player");
           mode = 2; break;
         case '3':
-          mose = 3; break;
+          Serial.println("Recording");
+          mode = 3; break;
         //default: does nothing
       }
       break;
@@ -46,8 +50,9 @@ void loop () {
       //keys play notes
       if (input == '0') { //stop goes back to mode 0
         mode = 0;
+        Serial.println("Stop Playing");
       } else {
-        //!!!!call note player!!!!
+        //!!!call note player here!!!
       }
       break;
     case 2: //playing
@@ -58,12 +63,15 @@ void loop () {
       mode = 0;//goes back to mode 0 when done
       break;
     case 3: //recording
+    //!!!!!!!!!!!!!!!!!!!!!!!!
+    //need to get character for which file to write, test, then set recording = true
+    //!!!!!!!!!!!!!!!!!!!!!!!!
       if (recording) {
         //keys play and save
         if (input == '0') { //stop goes back to mode 0
-          recoding = false; mode = 0; f_name_which = 0;
+          recording = false; mode = 0; f_name_which = 0;
         } else {
-          //!!!!call note player!!!!
+          //!!!call note player here!!!
 
           long delta = next - start;
           Serial.print("delay: "); Serial.println(delta);
@@ -74,7 +82,7 @@ void loop () {
           String val = "'" + c + "'," + num; //the quotes make the file CSV, but are not needed for us
 
           //save
-          FNum_Player (f_name_which);
+          FNum_File_Opener (false, f_name_which);
           dataFile.println(val); Serial.println(val); //save, puts the \r\n into text
           dataFile.close(); //have to close the file to ensure commit data
 
@@ -83,8 +91,8 @@ void loop () {
       } else if (input == 0x1B) {
         //user needs to press an F# key
         char f = FNum_Press_Check ();
-        FNum_File_Opener (false, char f);
-        recording = true;
+        FNum_File_Opener (false, f);
+        f_name_which = f; recording = true;
       }      
       break;
     default: //FAIL
@@ -151,7 +159,7 @@ void FNum_Player (char f_name) { //plays the contents of a single file
     int len = line.length(); char note = line.charAt(1);
     String duration = line.substring(4); int dur = duration.toInt();
 
-    //!!!! call player funciton here !!!!
+    //!!!call note player!!!
     Serial.print("line: "); Serial.println(line); //test found line of text
     Serial.print("note: "); Serial.println(note); 
     Serial.print("duration: "); Serial.println(dur);
@@ -162,7 +170,7 @@ void FNum_Player (char f_name) { //plays the contents of a single file
   }
 
   dataFile.close();
-  Serial.println("Done Playing");
+  Serial.println("Done Playing File");
 
   while (Serial.available() > 0) { //remove anything sent to Arduino during playback
     char s = (char)Serial.read();
