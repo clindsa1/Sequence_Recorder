@@ -63,12 +63,10 @@ void loop () {
       mode = 0;//goes back to mode 0 when done
       break;
     case 3: //recording
-    //!!!!!!!!!!!!!!!!!!!!!!!!
-    //need to get character for which file to write, test, then set recording = true
-    //!!!!!!!!!!!!!!!!!!!!!!!!
       if (recording) {
         //keys play and save
         if (input == '0') { //stop goes back to mode 0
+          Serial.println("Done recording");
           recording = false; mode = 0; f_name_which = 0;
         } else {
           //!!!call note player here!!!
@@ -176,4 +174,3 @@ void FNum_Player (char f_name) { //plays the contents of a single file
     char s = (char)Serial.read();
   }
 }
-
